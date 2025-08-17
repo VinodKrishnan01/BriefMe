@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "briefme-469208",
+  "private_key_id": "947c360f429f7476839ac9620214ea49901933aa",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCiBG9Obhq5nxxJ\nOc6ESCZI7uOZEMhDTWxGyL4mWavU8F78Kr5odSNqcpD0WFdNfu0dsDrY45v5Qm6u\nTGd7iFds5dkeMmwZfUl5FrMOd1E+da9+/CSkg9SBmRy3iZ3KrXxZZBNz2CcTNRhY\no6NGTik3+lfH7Vq/Bvj2qbdQifN42NtELewfrRBBbEQuAAtRBDWYoE0gfn1t8xsm\nCUvP4Mmp4CtKqfBcOPSlTA1pJLrMyjYEqg8UbIqPo9WJNUSxMthsvfzEyJ/VRzcY\nxlYwTqJqMtfY9GdrYu8X9fXW/5X3MOIyFfOhWz5HXupNlbmY/zv6YnfO8lxMxivl\nBiBH5qPdAgMBAAECggEAGj/6Mbykn1kAafvP8j5HV68+2HSv4bmoVqKdLlT+gmps\nlVIulfmOoqdLxY8PnAp5zALa0fu0sHK7QIm4BXuOYKIv5pTYT1vtfM049xnNY7+J\nDtu26yHB2zqNvM3y7xzjJg+RGEaX9CR43JmssU4mHv/0W3vhJUyxpzNRtF6ZgEVu\nAq74MgtkSB03T2PSLNlADBbCDDQu+BaRHS7HU7NqYKi21UM5jtl3D9tuRfPeYxdU\nnz0iEcaJSoCVnAYDpcKNuRZA/RwvauiLOs0P+b1IrxdIvlUz0JaITU4LBlcxXSJV\nuP4exPaLtYtAIHXGzWIy8Yl0DwC4zGsd1FiYCAZg+QKBgQDjT03sMmpqoBISxFRJ\nCYa7GZAQgcauBWIKLdSQwUtCer2+uxlfModnng16aJK0+zfLsdhtcupd0m85hvW7\n139eD855EuiRX0sSludaB5Eij5wqvfPQgOMdqL+5tmrx+rFHWMk16ITvv48biM2y\nQYy+qPaF3600M4qGsB8IfXVauQKBgQC2d3Cr2dBg5Oamf2iQeJpVf45sGrzFxraQ\nSp7iYUSAGaUMlnVn87fPNoXw578OluPuIlc4aE/1kE+LAMS8LcWYvM6s8X1jUVuL\n3Lbg2RIEU3+HcyK5lBCLLWvDDXBCsmY7r+Clau6Ur9KEEQkqgeLFdbiM7FcRlsp7\nUszdZRawRQKBgQCUyAOo5hbhU4SA5CCG7cVSEZlKNKdmn/9bykOnu90W1l/7x1sE\nBH68Q6dux6O+8e/DU9TlTqI4ZtSGQt/040hquM3cUZQIEueAc2VaeDl29aiyEULU\n5ofBkgJr/Apj+EKxAFwy/M6GXku9Kf34/w6wfMdfONiVoma5Ye3uELAPgQKBgQCs\ngTlFT1Sg9mdVS6kIxOxsHn8AlzqW5Koeul2B+qFvVk9jGi//SjwhrBNvUTmgymjM\n7yx0iLHnoDqDWQOmQMPKBd6DRH/d0MHy9YT0CGTvMB2maeSPfHsziYqSynayp8Td\ncwa4fOL4MU2eTBjVVhyVwBjtKleaqmvdscc7HGIZ3QKBgQC/VkNddtOUOutALKj8\nOV0Cb3X4f5pX3MLauSNUbwS4BB/bsqisCWDqdUP4MU0Q2fFp8HG6YB2wdYeH7yc2\nXE716BfU7jdCIOPX+wBWWC+aOaqc6eOcM705ZI7rRHm0A7wM4ixFw088hb3fos2b\naUzwHOovgNiq7F/C0jXF1d5rdw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "briefme-generator-service@briefme-469208.iam.gserviceaccount.com",
+  "client_id": "102498616874995748038",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/briefme-generator-service%40briefme-469208.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
