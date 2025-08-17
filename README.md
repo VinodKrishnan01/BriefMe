@@ -20,14 +20,17 @@ This will create a Python venv, install backend and frontend deps, and open two 
 
 Prereqs: Python 3.8+ and Node.js 16+ installed and on PATH.
 
-## Manual run
+## Manual setup and run (Windows, no scripts)
 
 Backend (Flask):
 
 ```powershell
 cd server
-python -m venv venv; ./venv/Scripts/Activate.ps1
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+# Optional if you didn't place files under "Service account key/":
+# $env:GEMINI_API_KEY = "your-key"; $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\\path\\to\\service-account.json"
 python app.py
 ```
 
