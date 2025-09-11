@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:5000/api/briefs";
+const API_BASE = process.env.REACT_APP_API_URL ? 
+  `${process.env.REACT_APP_API_URL}/api/briefs` : 
+  "https://briefme.onrender.com/api/briefs";
 
 export async function getBriefs(sessionId) {
   const res = await fetch(`${API_BASE}?client_session_id=${encodeURIComponent(sessionId)}`);

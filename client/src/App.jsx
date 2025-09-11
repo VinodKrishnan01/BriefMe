@@ -20,7 +20,7 @@ export default function App() {
   const [sessionId] = useState(getOrCreateSessionId());
   const [selectedBrief, setSelectedBrief] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const apiUrl = process.env.REACT_APP_API_URL || "https://briefme.onrender.com";
 
   const {
     briefs,
