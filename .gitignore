@@ -37,3 +37,7 @@ pip-wheel-metadata/
 # Frontend build outputs (safety)
 client/build/
 client/dist/
+
+# IMPORTANT: Never push interview-preparation folder to any online resources
+interview-preparation/
+**/interview-preparation/
