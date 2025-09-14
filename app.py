@@ -384,6 +384,17 @@ def create_brief():
     return jsonify(resp), 201
 
 
+@app.options("/api/briefs")
+def briefs_options():
+    """Handle CORS preflight requests for /api/briefs endpoint."""
+    response = jsonify()
+    response.headers.add('Access-Control-Allow-Origin', 'https://brief-me-seven.vercel.app')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    response.headers.add('Access-Control-Max-Age', '86400')  # Cache preflight for 24 hours
+    return response
+
+
 @app.get("/api/briefs")
 def list_briefs():
     client_session_id = (request.args.get("client_session_id") or "").strip()
@@ -399,6 +410,17 @@ def list_briefs():
     except Exception as e:
         logger.error("Failed to list briefs: %s", e)
         return jsonify({"error": "Failed to retrieve briefs"}), 500
+
+
+@app.options("/api/briefs/<string:brief_id>")
+def brief_options(brief_id: str):
+    """Handle CORS preflight requests for individual brief endpoints."""
+    response = jsonify()
+    response.headers.add('Access-Control-Allow-Origin', 'https://brief-me-seven.vercel.app')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, DELETE, OPTIONS')
+    response.headers.add('Access-Control-Max-Age', '86400')  # Cache preflight for 24 hours
+    return response
 
 
 @app.get("/api/briefs/<string:brief_id>")
