@@ -7,14 +7,23 @@ import Toast from "./components/Toast";
 import useBriefs from "./hooks/useBriefs";
 import useToast from "./hooks/useToast";
 
+// Generate session ID outside of component to avoid re-generation on re-renders
+let cachedSessionId = null;
+
 function getOrCreateSessionId() {
+  // If we already have a cached session ID, return it
+  if (cachedSessionId) {
+    console.log("Using cached session ID:", cachedSessionId);
+    return cachedSessionId;
+  }
+
   let id = localStorage.getItem("briefme_session_id");
   if (!id) {
     id = crypto.randomUUID(); // generates a valid UUID
     localStorage.setItem("briefme_session_id", id);
     console.log("Generated new session ID:", id);
   } else {
-    console.log("Using existing session ID:", id);
+    console.log("Loaded session ID from localStorage:", id);
   }
   
   // Validate the UUID format
@@ -26,14 +35,20 @@ function getOrCreateSessionId() {
     console.log("Generated replacement session ID:", id);
   }
   
+  // Cache the session ID
+  cachedSessionId = id;
+  console.log("Session ID cached:", cachedSessionId);
   return id;
 }
 
 export default function App() {
-  const [sessionId] = useState(getOrCreateSessionId());
+  // Use function in useState to ensure getOrCreateSessionId is called only once
+  const [sessionId] = useState(() => getOrCreateSessionId());
   const [selectedBrief, setSelectedBrief] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const apiUrl = process.env.REACT_APP_API_URL || "https://briefme.onrender.com";
+
+  console.log("App component rendered with session ID:", sessionId);
 
   const {
     briefs,

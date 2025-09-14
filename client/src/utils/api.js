@@ -3,8 +3,20 @@ const API_BASE = process.env.REACT_APP_API_URL ?
   "https://briefme.onrender.com/api/briefs";
 
 export async function getBriefs(sessionId) {
-  const res = await fetch(`${API_BASE}?client_session_id=${encodeURIComponent(sessionId)}`);
-  if (!res.ok) throw new Error("Failed to fetch briefs");
+  console.log("Fetching briefs with session ID:", sessionId);
+  console.log("Session ID length:", sessionId?.length);
+  console.log("Session ID type:", typeof sessionId);
+  
+  const url = `${API_BASE}?client_session_id=${encodeURIComponent(sessionId)}`;
+  console.log("Fetching from URL:", url);
+  
+  const res = await fetch(url);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("GET briefs error:", errorText);
+    throw new Error("Failed to fetch briefs");
+  }
   return await res.json();
 }
 
