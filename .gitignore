@@ -7,6 +7,19 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 
+# SECURITY: Ignore all API keys and sensitive files
+*.json
+*.key
+*.pem
+.env
+.env.*
+**/Service account key/
+**/*key*.txt
+**/*api*.txt
+**/*secret*
+**/*credential*
+briefme-*.json
+
 # Ignore Python environments and artifacts
 venv/
 .venv/

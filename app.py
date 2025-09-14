@@ -35,7 +35,7 @@ logger = logging.getLogger("brief-api")
 # Inline configuration (no .env). You can edit these defaults directly.
 # ----------------------------------------------------------------------------
 
-# Defaults (can still be overridden by environment, but not required)
+# SECURITY: Only use environment variables - NEVER local files for API keys
 GCP_PROJECT_ID: Optional[str] = os.getenv("GCP_PROJECT_ID") or None
 GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
 GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY") or None
@@ -44,50 +44,15 @@ FIRESTORE_DATABASE_ID = os.getenv("FIRESTORE_DATABASE_ID", "briefmedatabase")
 MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "10000"))
 MAX_RECENT_BRIEFS = int(os.getenv("MAX_RECENT_BRIEFS", "10"))
 
-# Try to set GOOGLE_APPLICATION_CREDENTIALS to a local service account JSON if not provided
-if not GOOGLE_APPLICATION_CREDENTIALS:
-    server_dir = os.path.dirname(__file__)
-    sa_in_server = os.path.join(server_dir, "briefme-469208-947c360f429f.json")
-    if os.path.exists(sa_in_server):
-        GOOGLE_APPLICATION_CREDENTIALS = sa_in_server
-    else:
-        # Check parent folder "Service account key"
-        repo_root = os.path.abspath(os.path.join(server_dir, ".."))
-        sa_in_root = os.path.join(repo_root, "Service account key", "briefme-469208-947c360f429f.json")
-        if os.path.exists(sa_in_root):
-            GOOGLE_APPLICATION_CREDENTIALS = sa_in_root
-
-# If we found credentials, expose them for Google SDK
-if GOOGLE_APPLICATION_CREDENTIALS:
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
-
-# Derive project id from service account if not set
-if not GCP_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS and os.path.exists(GOOGLE_APPLICATION_CREDENTIALS):
-    try:
-        with open(GOOGLE_APPLICATION_CREDENTIALS, "r", encoding="utf-8") as f:
-            sa = json.load(f)
-            GCP_PROJECT_ID = sa.get("project_id") or sa.get("projectId") or GCP_PROJECT_ID
-    except Exception:
-        pass
-
-# Load Gemini API key from repo file if not provided
-if not GEMINI_API_KEY:
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    gemini_key_path = os.path.join(repo_root, "Service account key", "gemini api key.txt")
-    try:
-        if os.path.exists(gemini_key_path):
-            with open(gemini_key_path, "r", encoding="utf-8") as f:
-                key = f.read().strip()
-                GEMINI_API_KEY = key or None
-    except Exception:
-        GEMINI_API_KEY = None
+# For production deployment, all sensitive values must be set as environment variables
+# Local development should use a .env file (which is gitignored)
 
 if not GCP_PROJECT_ID:
-    logger.warning("GCP_PROJECT_ID is not set (and could not be derived). Firestore may fail to initialize.")
-if not GOOGLE_APPLICATION_CREDENTIALS or not os.path.exists(GOOGLE_APPLICATION_CREDENTIALS):
-    logger.warning("GOOGLE_APPLICATION_CREDENTIALS not set or file missing. Ensure credentials are configured.")
+    logger.warning("GCP_PROJECT_ID is not set. Set as environment variable.")
+if not GOOGLE_APPLICATION_CREDENTIALS:
+    logger.warning("GOOGLE_APPLICATION_CREDENTIALS not set. Set as environment variable.")
 if not GEMINI_API_KEY:
-    logger.warning("GEMINI_API_KEY is not set. Gemini calls will fail.")
+    logger.warning("GEMINI_API_KEY is not set. Set as environment variable.")
 logger.info("Firestore target database id: %s", FIRESTORE_DATABASE_ID)
 
 
