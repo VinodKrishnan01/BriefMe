@@ -19,10 +19,14 @@ import google.generativeai as genai
 
 app = Flask(__name__)
 # Allow CORS for both local development and production
-CORS(app, origins=[
-    "http://localhost:3000", 
-    "https://brief-me-seven.vercel.app"
-], supports_credentials=True)
+CORS(app, 
+     origins=[
+         "http://localhost:3000", 
+         "https://brief-me-seven.vercel.app"
+     ],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("brief-api")
 
