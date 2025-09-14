@@ -9,15 +9,28 @@ export async function getBriefs(sessionId) {
 }
 
 export async function createBrief(sourceText, sessionId) {
+  console.log("Creating brief with session ID:", sessionId);
+  console.log("Session ID length:", sessionId?.length);
+  console.log("Session ID type:", typeof sessionId);
+  
+  const payload = {
+    source_text: sourceText,
+    client_session_id: sessionId,
+  };
+  
+  console.log("Payload being sent:", payload);
+  
   const res = await fetch(API_BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      source_text: sourceText,
-      client_session_id: sessionId,
-    }),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Failed to create brief");
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("API Error Response:", errorText);
+    throw new Error("Failed to create brief");
+  }
   return await res.json();
 }
 

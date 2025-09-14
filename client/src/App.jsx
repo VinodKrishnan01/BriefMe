@@ -12,7 +12,20 @@ function getOrCreateSessionId() {
   if (!id) {
     id = crypto.randomUUID(); // generates a valid UUID
     localStorage.setItem("briefme_session_id", id);
+    console.log("Generated new session ID:", id);
+  } else {
+    console.log("Using existing session ID:", id);
   }
+  
+  // Validate the UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    console.warn("Invalid UUID format, generating new one. Old ID:", id);
+    id = crypto.randomUUID();
+    localStorage.setItem("briefme_session_id", id);
+    console.log("Generated replacement session ID:", id);
+  }
+  
   return id;
 }
 
