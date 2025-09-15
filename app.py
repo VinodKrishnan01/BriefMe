@@ -1,17 +1,14 @@
 import os
-import re
 import json
-import uuid
-import hashlib
 import logging
+import re
+import hashlib
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from google.cloud import firestore
-from google.cloud.firestore_v1 import FieldFilter
-import google.generativeai as genai
 
 # ----------------------------------------------------------------------------
 # Minimal, single-file API for "Brief Generator"
@@ -56,27 +53,6 @@ if not GOOGLE_APPLICATION_CREDENTIALS:
 if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY is not set. Set as environment variable.")
 logger.info("Firestore target database id: %s", FIRESTORE_DATABASE_ID)
-
-
-# ----------------------------------------------------------------------------
-# Routes
-# ----------------------------------------------------------------------------
-
-@app.route("/")
-def root():
-    """Root endpoint for health checks and basic info"""
-    return jsonify({
-        "service": "Brief Generator API",
-        "status": "running",
-        "version": "1.1.0",
-        "endpoints": {
-            "health": "/health",
-            "create_brief": "POST /api/briefs",
-            "list_briefs": "GET /api/briefs?client_session_id=<uuid>",
-            "get_brief": "GET /api/briefs/<id>?client_session_id=<uuid>",
-            "delete_brief": "DELETE /api/briefs/<id>?client_session_id=<uuid>"
-        }
-    })
 
 
 # ----------------------------------------------------------------------------
@@ -172,8 +148,8 @@ def _find_duplicate(client_session_id: str, text_hash: str) -> Optional[Dict[str
     try:
         docs = (
             _collection()
-            .where(filter=FieldFilter("client_session_id", "==", client_session_id))
-            .where(filter=FieldFilter("sha256", "==", text_hash))
+            .where(filter=firestore.FieldFilter("client_session_id", "==", client_session_id))
+            .where(filter=firestore.FieldFilter("sha256", "==", text_hash))
             .limit(1)
             .stream()
         )
@@ -186,7 +162,7 @@ def _find_duplicate(client_session_id: str, text_hash: str) -> Optional[Dict[str
         msg = str(e)
         if "The query requires an index" in msg:
             try:
-                for d in _collection().where(filter=FieldFilter("sha256", "==", text_hash)).stream():
+                for d in _collection().where(filter=firestore.FieldFilter("sha256", "==", text_hash)).stream():
                     data = d.to_dict()
                     if data.get("client_session_id") == client_session_id:
                         return data
@@ -201,7 +177,7 @@ def _recent_briefs(client_session_id: str, limit: int = 10) -> List[Dict[str, An
     try:
         query = (
             _collection()
-            .where(filter=FieldFilter("client_session_id", "==", client_session_id))
+            .where(filter=firestore.FieldFilter("client_session_id", "==", client_session_id))
             .order_by("created_at", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
@@ -209,7 +185,7 @@ def _recent_briefs(client_session_id: str, limit: int = 10) -> List[Dict[str, An
     except Exception as e:
         # Fallback if missing index: query by session and sort locally
         if "The query requires an index" in str(e):
-            docs = list(_collection().where(filter=FieldFilter("client_session_id", "==", client_session_id)).stream())
+            docs = list(_collection().where(filter=firestore.FieldFilter("client_session_id", "==", client_session_id)).stream())
             items = [d.to_dict() for d in docs]
             items.sort(key=lambda b: b.get("created_at"), reverse=True)
             docs = []
@@ -256,6 +232,7 @@ def _gemini_generate(source_text: str) -> Dict[str, Any]:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY not configured")
 
+    import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel("gemini-2.5-pro")
 
@@ -314,6 +291,23 @@ def _gemini_generate(source_text: str) -> Dict[str, Any]:
 # ----------------------------------------------------------------------------
 # Routes
 # ----------------------------------------------------------------------------
+
+@app.route("/")
+def root():
+    """Root endpoint for health checks and basic info"""
+    return jsonify({
+        "service": "Brief Generator API",
+        "status": "running",
+        "version": "1.1.0",
+        "endpoints": {
+            "health": "/health",
+            "create_brief": "POST /api/briefs",
+            "list_briefs": "GET /api/briefs?client_session_id=<uuid>",
+            "get_brief": "GET /api/briefs/<id>?client_session_id=<uuid>",
+            "delete_brief": "DELETE /api/briefs/<id>?client_session_id=<uuid>"
+        }
+    })
+
 
 @app.get("/health")
 def health():
