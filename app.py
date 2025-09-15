@@ -28,17 +28,6 @@ CORS(app,
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=True,
      automatic_options=True)
-
-# Add explicit CORS headers to all responses
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin')
-    if origin in ["http://localhost:3000", "https://brief-me-seven.vercel.app"]:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-    return response
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("brief-api")
 
@@ -136,13 +125,20 @@ _db: Optional[firestore.Client] = None
 def _get_db() -> firestore.Client:
     global _db
     if _db is None:
-        _db = firestore.Client(project=GCP_PROJECT_ID, database=FIRESTORE_DATABASE_ID)
-        logger.info(
-            "Firestore client initialized (project=%s, database=%s, collection=%s)",
-            GCP_PROJECT_ID,
-            FIRESTORE_DATABASE_ID,
-            FIRESTORE_COLLECTION,
-        )
+        try:
+            if not GCP_PROJECT_ID:
+                raise RuntimeError("GCP_PROJECT_ID environment variable is not set")
+            
+            _db = firestore.Client(project=GCP_PROJECT_ID, database=FIRESTORE_DATABASE_ID)
+            logger.info(
+                "Firestore client initialized (project=%s, database=%s, collection=%s)",
+                GCP_PROJECT_ID,
+                FIRESTORE_DATABASE_ID,
+                FIRESTORE_COLLECTION,
+            )
+        except Exception as e:
+            logger.error("Failed to initialize Firestore client: %s", e)
+            raise RuntimeError(f"Firestore initialization failed: {e}") from e
     return _db
 
 
@@ -299,7 +295,27 @@ def _gemini_generate(source_text: str) -> Dict[str, Any]:
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok", "time": _to_iso(_now_utc())})
+    health_status = {
+        "status": "ok", 
+        "time": _to_iso(_now_utc()),
+        "version": "1.1.0",
+        "environment": {
+            "gcp_project_id": bool(GCP_PROJECT_ID),
+            "gemini_api_key": bool(GEMINI_API_KEY),
+            "google_application_credentials": bool(GOOGLE_APPLICATION_CREDENTIALS)
+        }
+    }
+    
+    # Test Firestore connection
+    try:
+        _get_db()  # This will initialize the client
+        health_status["firestore"] = "connected"
+    except Exception as e:
+        logger.error("Firestore health check failed: %s", e)
+        health_status["firestore"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    return jsonify(health_status)
 
 
 @app.post("/api/briefs")
