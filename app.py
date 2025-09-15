@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import hashlib
+import uuid  # <- MISSING IMPORT!
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -127,7 +128,27 @@ def _get_db() -> firestore.Client:
             if not GCP_PROJECT_ID:
                 raise RuntimeError("GCP_PROJECT_ID environment variable is not set")
             
-            _db = firestore.Client(project=GCP_PROJECT_ID, database=FIRESTORE_DATABASE_ID)
+            if GOOGLE_APPLICATION_CREDENTIALS:
+                # Parse JSON credentials from environment variable
+                try:
+                    credentials_info = json.loads(GOOGLE_APPLICATION_CREDENTIALS)
+                    from google.oauth2 import service_account
+                    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+                    
+                    _db = firestore.Client(
+                        project=GCP_PROJECT_ID, 
+                        credentials=credentials,
+                        database=FIRESTORE_DATABASE_ID
+                    )
+                    logger.info("Firestore initialized with service account credentials")
+                except json.JSONDecodeError as e:
+                    logger.error("Failed to parse GOOGLE_APPLICATION_CREDENTIALS as JSON: %s", e)
+                    raise RuntimeError(f"Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS: {e}") from e
+            else:
+                # Fallback to default credentials (for local development)
+                _db = firestore.Client(project=GCP_PROJECT_ID, database=FIRESTORE_DATABASE_ID)
+                logger.info("Firestore initialized with default credentials")
+                
             logger.info(
                 "Firestore client initialized (project=%s, database=%s, collection=%s)",
                 GCP_PROJECT_ID,
