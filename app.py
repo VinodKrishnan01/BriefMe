@@ -330,7 +330,7 @@ def root():
     })
 
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 def health():
     health_status = {
         "status": "ok", 
@@ -355,7 +355,7 @@ def health():
     return jsonify(health_status)
 
 
-@app.post("/api/briefs")
+@app.route("/api/briefs", methods=["POST"])
 def create_brief():
     """Create a new brief: body { source_text, client_session_id }"""
     data = request.get_json(silent=True) or {}
@@ -414,7 +414,7 @@ def create_brief():
     return jsonify(resp), 201
 
 
-@app.get("/api/briefs")
+@app.route("/api/briefs", methods=["GET"])
 def list_briefs():
     client_session_id = (request.args.get("client_session_id") or "").strip()
     limit = request.args.get("limit", type=int) or MAX_RECENT_BRIEFS
@@ -431,7 +431,7 @@ def list_briefs():
         return jsonify({"error": "Failed to retrieve briefs"}), 500
 
 
-@app.get("/api/briefs/<string:brief_id>")
+@app.route("/api/briefs/<string:brief_id>", methods=["GET"])
 def get_brief(brief_id: str):
     client_session_id = (request.args.get("client_session_id") or "").strip()
     if not _is_uuid(client_session_id) or not _is_uuid(brief_id):
@@ -448,7 +448,7 @@ def get_brief(brief_id: str):
         return jsonify({"error": "Failed to retrieve brief"}), 500
 
 
-@app.delete("/api/briefs/<string:brief_id>")
+@app.route("/api/briefs/<string:brief_id>", methods=["DELETE"])
 def delete_brief(brief_id: str):
     client_session_id = (request.args.get("client_session_id") or "").strip()
     if not _is_uuid(client_session_id) or not _is_uuid(brief_id):
@@ -463,6 +463,25 @@ def delete_brief(brief_id: str):
     except Exception as e:
         logger.error("Failed to delete brief: %s", e)
         return jsonify({"error": "Failed to delete brief"}), 500
+
+
+@app.after_request
+def after_request(response):
+    """Add CORS headers to all responses"""
+    response.headers.add('Access-Control-Allow-Origin', FRONTEND_URL)
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
+
+# Add explicit OPTIONS handler
+@app.route('/api/briefs', methods=['OPTIONS'])
+@app.route('/api/briefs/<string:brief_id>', methods=['OPTIONS'])
+def handle_options(brief_id=None):
+    """Handle preflight requests"""
+    response = jsonify({'status': 'ok'})
+    return response
 
 
 if __name__ == "__main__":
