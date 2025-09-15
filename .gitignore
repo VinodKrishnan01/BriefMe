@@ -54,3 +54,40 @@ client/dist/
 # IMPORTANT: Never push interview-preparation folder to any online resources
 interview-preparation/
 **/interview-preparation/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Service account keys
+*.json
+briefme-*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+
+# Node.js (for client)
+node_modules/
+npm-debug.log*
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/

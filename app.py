@@ -17,29 +17,15 @@ import google.generativeai as genai
 # Minimal, single-file API for "Brief Generator"
 # ----------------------------------------------------------------------------
 
-app = Flask(__name__)
-# Allow CORS for both local development and production
-CORS(app, 
-     origins=[
-         "http://localhost:3000", 
-         "https://brief-me-seven.vercel.app"
-     ],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
-     supports_credentials=True,
-     automatic_options=True)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("brief-api")
-
-
 # ----------------------------------------------------------------------------
-# Inline configuration (no .env). You can edit these defaults directly.
+# Configuration (no .env). You can edit these defaults directly.
 # ----------------------------------------------------------------------------
 
 # SECURITY: Only use environment variables - NEVER local files for API keys
 GCP_PROJECT_ID: Optional[str] = os.getenv("GCP_PROJECT_ID") or None
 GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
 GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY") or None
+FRONTEND_URL: Optional[str] = os.getenv("FRONTEND_URL") or "https://brief-me-seven.vercel.app"
 FIRESTORE_COLLECTION = os.getenv("FIRESTORE_COLLECTION", "briefs")
 FIRESTORE_DATABASE_ID = os.getenv("FIRESTORE_DATABASE_ID", "briefmedatabase")
 MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "10000"))
@@ -48,6 +34,21 @@ MAX_RECENT_BRIEFS = int(os.getenv("MAX_RECENT_BRIEFS", "10"))
 # For production deployment, all sensitive values must be set as environment variables
 # Local development should use a .env file (which is gitignored)
 
+app = Flask(__name__)
+# Allow CORS for both local development and production
+CORS(app, 
+     origins=[
+         "http://localhost:3000", 
+         FRONTEND_URL,
+         "https://brief-me-seven.vercel.app"  # Fallback for your current deployment
+     ],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True,
+     automatic_options=True)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("brief-api")
+
 if not GCP_PROJECT_ID:
     logger.warning("GCP_PROJECT_ID is not set. Set as environment variable.")
 if not GOOGLE_APPLICATION_CREDENTIALS:
@@ -55,6 +56,27 @@ if not GOOGLE_APPLICATION_CREDENTIALS:
 if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY is not set. Set as environment variable.")
 logger.info("Firestore target database id: %s", FIRESTORE_DATABASE_ID)
+
+
+# ----------------------------------------------------------------------------
+# Routes
+# ----------------------------------------------------------------------------
+
+@app.route("/")
+def root():
+    """Root endpoint for health checks and basic info"""
+    return jsonify({
+        "service": "Brief Generator API",
+        "status": "running",
+        "version": "1.1.0",
+        "endpoints": {
+            "health": "/health",
+            "create_brief": "POST /api/briefs",
+            "list_briefs": "GET /api/briefs?client_session_id=<uuid>",
+            "get_brief": "GET /api/briefs/<id>?client_session_id=<uuid>",
+            "delete_brief": "DELETE /api/briefs/<id>?client_session_id=<uuid>"
+        }
+    })
 
 
 # ----------------------------------------------------------------------------
