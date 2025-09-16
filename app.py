@@ -323,6 +323,8 @@ def health():
 
 @app.route("/api/briefs", methods=["POST"])
 def create_brief():
+    if request.method == "OPTIONS":
+        return "", 200
     data = request.get_json(silent=True) or {}
     source_text = (data.get("source_text") or "").strip()
     client_session_id = (data.get("client_session_id") or "").strip()
