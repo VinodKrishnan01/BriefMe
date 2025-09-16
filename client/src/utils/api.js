@@ -2,7 +2,7 @@ const API_BASE = process.env.REACT_APP_API_URL ?
   `${process.env.REACT_APP_API_URL}/api/briefs` : 
   "https://briefme.onrender.com/api/briefs";
 
-const API_TIMEOUT = 15000; // 15 seconds
+const API_TIMEOUT = 60000; // 15+45 seconds
 
 export async function getBriefs(sessionId) {
   if (!sessionId) throw new Error("Session ID is required");
