@@ -29,11 +29,12 @@ app = Flask(__name__)
 CORS(app, 
      origins=[
          "http://localhost:3000", 
+         "https://brief-me-seven.vercel.app",  # Add this explicitly
          FRONTEND_URL,
-         "https://brief-me-seven.vercel.app"
+         "*"  # Temporary - remove after testing
      ],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True,
      automatic_options=True)
 
@@ -424,6 +425,15 @@ def delete_brief(brief_id: str):
         logger.error("Failed to delete brief: %s", e)
         return jsonify({"error": "Failed to delete brief"}), 500
 
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'status': 'ok'})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
+
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
@@ -456,9 +466,12 @@ def handle_all_exceptions(e):
     return response, 500
 
 @app.route('/api/briefs', methods=['OPTIONS'])
-@app.route('/api/briefs/<string:brief_id>', methods=['OPTIONS'])
+@app.route('/api/briefs/<string:brief_id>', methods=['OPTIONS'])  
 def handle_options(brief_id=None):
     response = jsonify({'status': 'ok'})
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
     return response
 
 if __name__ == "__main__":
