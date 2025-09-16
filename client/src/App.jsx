@@ -19,7 +19,17 @@ function getOrCreateSessionId() {
 
   let id = localStorage.getItem("briefme_session_id");
   if (!id) {
-    id = crypto.randomUUID(); // generates a valid UUID
+    // Add fallback for older browsers
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      id = crypto.randomUUID();
+    } else {
+      // Fallback UUID generation
+      id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
     localStorage.setItem("briefme_session_id", id);
     console.log("Generated new session ID:", id);
   } else {
@@ -30,7 +40,12 @@ function getOrCreateSessionId() {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(id)) {
     console.warn("Invalid UUID format, generating new one. Old ID:", id);
-    id = crypto.randomUUID();
+    id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
     localStorage.setItem("briefme_session_id", id);
     console.log("Generated replacement session ID:", id);
   }
@@ -46,7 +61,6 @@ export default function App() {
   const [sessionId] = useState(() => getOrCreateSessionId());
   const [selectedBrief, setSelectedBrief] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const apiUrl = process.env.REACT_APP_API_URL || "https://briefme.onrender.com";
 
   console.log("App component rendered with session ID:", sessionId);
 
@@ -63,28 +77,35 @@ export default function App() {
 
   const { toast, showToast, clearToast } = useToast();
 
+  // Add initial brief loading
+  // useEffect(() => {
+  //   if (sessionId) {
+  //     fetchBriefs();
+  //   }
+  // }, [sessionId, fetchBriefs]);
+
   useEffect(() => {
     if (error) showToast(error, "error");
-    // eslint-disable-next-line
   }, [error, showToast]);
 
-
-const handleCreateBrief = async (text) => {
-  try {
-    const newBrief = await submitBrief(text);  // Get the created brief
-    // Instead of fetching all briefs, just add the new one to the list
-    showToast("Brief created!", "success");
-  } catch {
-    // error handled in hook
-  }
-};
+  const handleCreateBrief = async (text) => {
+    try {
+      const newBrief = await submitBrief(text);
+      showToast("Brief created!", "success");
+      return newBrief;
+    } catch (err) {
+      console.error("Create brief error:", err);
+      showToast(err.message || "Failed to create brief", "error");
+    }
+  };
 
   const handleSelectBrief = async (brief) => {
     try {
       const fullBrief = await fetchBrief(brief.id);
       setSelectedBrief(fullBrief);
       setModalOpen(true);
-    } catch {
+    } catch (err) {
+      console.error("Fetch brief error:", err);
       showToast("Failed to load brief details.", "error");
     }
   };
@@ -94,8 +115,9 @@ const handleCreateBrief = async (text) => {
       await removeBrief(briefId);
       setModalOpen(false);
       showToast("Brief deleted.", "success");
-    } catch {
-      // error handled in hook
+    } catch (err) {
+      console.error("Delete brief error:", err);
+      showToast("Failed to delete brief.", "error");
     }
   };
 
@@ -118,8 +140,27 @@ const handleCreateBrief = async (text) => {
         "Questions:",
         ...brief.questions.map((q) => `- ${q}`),
       ].join("\n");
-      navigator.clipboard.writeText(text);
-      showToast("Copied to clipboard!", "success");
+      
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("Copied to clipboard!", "success");
+        }).catch(() => {
+          showToast("Copy failed", "error");
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast("Copied to clipboard!", "success");
+        } catch (err) {
+          showToast("Copy failed", "error");
+        }
+        document.body.removeChild(textArea);
+      }
     },
     [showToast]
   );
@@ -135,25 +176,12 @@ const handleCreateBrief = async (text) => {
       <Header sessionId={sessionId} />
       <main className="pt-20 px-2">
         <BriefInput onSubmit={handleCreateBrief} loading={loading} />
-        {/* Only show BriefList if user has created briefs or explicitly wants to see history */}
-        {briefs.length > 0 && (
-          <BriefList
-            briefs={briefs}
-            loading={loading}
-            onSelectBrief={handleSelectBrief}
-          //  onRefresh={fetchBriefs}
-          />
-        )}
-        {briefs.length === 0 && !loading && (
-          <div className="text-center mt-8">
-            <button 
-              onClick={handleLoadBriefs}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Load Previous Briefs
-            </button>
-          </div>
-        )}
+        <BriefList
+          briefs={briefs}
+          loading={loading}
+          onSelectBrief={handleSelectBrief}
+          onRefresh={handleLoadBriefs}
+        />
         <BriefDetailModal
           brief={selectedBrief}
           isOpen={modalOpen}

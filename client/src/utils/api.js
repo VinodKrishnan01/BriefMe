@@ -55,6 +55,9 @@ export async function createBrief(sourceText, sessionId) {
   
   console.log("Creating brief with session ID:", sessionId);
   
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+  
   const payload = {
     source_text: sourceText.trim(),
     client_session_id: sessionId,
@@ -70,7 +73,10 @@ export async function createBrief(sourceText, sessionId) {
         'Accept': 'application/json',
       },
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     
     if (!res.ok) {
       const errorText = await res.text();
@@ -85,9 +91,13 @@ export async function createBrief(sourceText, sessionId) {
     }
     return await res.json();
   } catch (error) {
+    clearTimeout(timeoutId);
     console.error("Create brief failed:", error);
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error("Network error - please check your connection");
+    }
+    if (error.name === 'AbortError') {
+      throw new Error("Request timeout - server may be busy");
     }
     throw error;
   }

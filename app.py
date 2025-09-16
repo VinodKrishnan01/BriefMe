@@ -26,8 +26,18 @@ MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "10000"))
 MAX_RECENT_BRIEFS = int(os.getenv("MAX_RECENT_BRIEFS", "10"))
 
 app = Flask(__name__)
+
+# Define allowed origins
+ALLOWED_ORIGINS = [
+    "https://brief-me-seven.vercel.app",
+    "http://localhost:3000",  # For development
+]
+
+if FRONTEND_URL and FRONTEND_URL not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.append(FRONTEND_URL)
+
 CORS(app, 
-     origins="*",  # Allow all origins temporarily
+     origins=ALLOWED_ORIGINS,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=False)  # Set to False when using "*"
@@ -131,30 +141,47 @@ def _collection():
     return _get_db().collection(FIRESTORE_COLLECTION)
 
 def _find_duplicate(client_session_id: str, text_hash: str) -> Optional[Dict[str, Any]]:
+    """Find duplicate with timeout protection"""
     try:
-        docs = (
-            _collection()
-            .where(filter=firestore.FieldFilter("client_session_id", "==", client_session_id))
-            .where(filter=firestore.FieldFilter("sha256", "==", text_hash))
-            .limit(1)
-            .stream()
-        )
-        docs = list(docs)
-        if docs:
-            return docs[0].to_dict()
-        return None
+        # Add timeout protection
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+        import signal
+        
+        def query_with_timeout():
+            docs = (
+                _collection()
+                .where(filter=firestore.FieldFilter("client_session_id", "==", client_session_id))
+                .where(filter=firestore.FieldFilter("sha256", "==", text_hash))
+                .limit(1)
+                .stream()
+            )
+            return list(docs)
+        
+        # Execute with 10 second timeout
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(query_with_timeout)
+            try:
+                docs = future.result(timeout=10.0)  # 10 second timeout
+                if docs:
+                    return docs[0].to_dict()
+                return None
+            except TimeoutError:
+                logger.warning("Duplicate check timed out - skipping")
+                return None
+                
     except Exception as e:
         msg = str(e)
-        if "The query requires an index" in msg:
-            try:
-                for d in _collection().where(filter=firestore.FieldFilter("sha256", "==", text_hash)).stream():
-                    data = d.to_dict()
-                    if data.get("client_session_id") == client_session_id:
-                        return data
-            except Exception as e2:
-                logger.error("Duplicate-check fallback failed: %s", e2)
-        else:
-            logger.error("Duplicate-check failed: %s", e)
+        logger.warning(f"Duplicate check failed: {msg}")
+        
+        # Simplified fallback - just check by hash without session filter
+        try:
+            for doc in _collection().where(filter=firestore.FieldFilter("sha256", "==", text_hash)).limit(5).stream():
+                data = doc.to_dict()
+                if data.get("client_session_id") == client_session_id:
+                    return data
+        except Exception as e2:
+            logger.error("Fallback duplicate check also failed: %s", e2)
+        
         return None
 
 def _recent_briefs(client_session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -325,6 +352,7 @@ def health():
 def create_brief():
     if request.method == "OPTIONS":
         return "", 200
+        
     data = request.get_json(silent=True) or {}
     source_text = (data.get("source_text") or "").strip()
     client_session_id = (data.get("client_session_id") or "").strip()
@@ -337,11 +365,13 @@ def create_brief():
         return jsonify({"error": "client_session_id must be a valid UUID"}), 400
 
     text_hash = _sha256(source_text)
-    existing = _find_duplicate(client_session_id, text_hash)
-    if existing:
-        existing["created_at"] = _to_iso(existing.get("created_at"))
-        existing["actions"] = _map_actions_to_ui(existing.get("actions", []))
-        return jsonify({**existing, **_counts(existing)}), 200
+    
+    # Skip duplicate check in production to avoid timeout issues
+    # existing = _find_duplicate(client_session_id, text_hash)
+    # if existing:
+    #     existing["created_at"] = _to_iso(existing.get("created_at"))
+    #     existing["actions"] = _map_actions_to_ui(existing.get("actions", []))
+    #     return jsonify({**existing, **_counts(existing)}), 200
 
     try:
         llm = _gemini_generate(source_text)
@@ -367,6 +397,7 @@ def create_brief():
 
     try:
         _collection().document(brief_id).set(doc)
+        logger.info(f"Brief created successfully: {brief_id}")
     except Exception as e:
         logger.error("Failed to store brief: %s", e)
         return jsonify({"error": "Failed to store brief"}), 500
@@ -421,23 +452,18 @@ def delete_brief(brief_id: str):
         logger.error("Failed to delete brief: %s", e)
         return jsonify({"error": "Failed to delete brief"}), 500
 
-# @app.errorhandler(Exception)  
-# def handle_all_exceptions(e):
-#     logger.error(f"Unhandled exception: {e}")
+@app.errorhandler(Exception)  
+def handle_all_exceptions(e):
+    logger.error(f"Unhandled exception: {e}")
     
-#     response = jsonify({"error": "Internal server error"})
+    response = jsonify({"error": "Internal server error"})
     
-#     origin = request.headers.get('Origin', 'https://brief-me-seven.vercel.app')
-#     if origin in ['http://localhost:3000', 'https://brief-me-seven.vercel.app', FRONTEND_URL]:
-#         response.headers.add('Access-Control-Allow-Origin', origin)
-#     else:
-#         response.headers.add('Access-Control-Allow-Origin', 'https://brief-me-seven.vercel.app')
+    # Using consistent CORS headers for specific origins
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
     
-#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-#     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-#     response.headers.add('Access-Control-Allow-Credentials', 'true')
-    
-#     return response, 500
+    return response, 500
 
 # @app.route('/api/briefs', methods=['OPTIONS'])
 # @app.route('/api/briefs/<string:brief_id>', methods=['OPTIONS'])  

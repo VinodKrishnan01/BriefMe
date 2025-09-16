@@ -37,10 +37,8 @@ export default function useBriefs(sessionId) {
       } catch (err) {
         const errorMessage = err.message || "Failed to create brief";
         setError(errorMessage);
-        // Don't throw in production, show user-friendly error
-        if (process.env.NODE_ENV === 'development') {
-          throw err;
-        }
+        // Always propagate errors consistently
+        throw err;
       } finally {
         setLoading(false);
       }
