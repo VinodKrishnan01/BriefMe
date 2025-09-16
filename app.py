@@ -305,7 +305,7 @@ def _gemini_generate(source_text: str) -> Dict[str, Any]:
         return call_once(build_prompt(False))
     except Exception as e1:
         logger.warning("Gemini parse failed, retrying strictly: %s", e1)
-        return call_once(build_prompt(True))
+        return call_once(build_prompt(True))  # If this fails, exception bubbles up
 
 # ----------------------------------------------------------------------------
 # Routes
