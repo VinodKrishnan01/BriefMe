@@ -27,16 +27,10 @@ MAX_RECENT_BRIEFS = int(os.getenv("MAX_RECENT_BRIEFS", "10"))
 
 app = Flask(__name__)
 CORS(app, 
-     origins=[
-         "http://localhost:3000", 
-         "https://brief-me-seven.vercel.app",  # Add this explicitly
-         FRONTEND_URL,
-         "*"  # Temporary - remove after testing
-     ],
+     origins="*",  # Allow all origins temporarily
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-     supports_credentials=True,
-     automatic_options=True)
+     supports_credentials=False)  # Set to False when using "*"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("brief-api")
@@ -425,45 +419,23 @@ def delete_brief(brief_id: str):
         logger.error("Failed to delete brief: %s", e)
         return jsonify({"error": "Failed to delete brief"}), 500
 
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = jsonify({'status': 'ok'})
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
-        return response
-
-@app.after_request
-def after_request(response):
-    origin = request.headers.get('Origin')
-    if origin in ['http://localhost:3000', 'https://brief-me-seven.vercel.app', FRONTEND_URL]:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-    else:
-        response.headers.add('Access-Control-Allow-Origin', 'https://brief-me-seven.vercel.app')
+# @app.errorhandler(Exception)  
+# def handle_all_exceptions(e):
+#     logger.error(f"Unhandled exception: {e}")
     
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    return response
-
-@app.errorhandler(Exception)  
-def handle_all_exceptions(e):
-    logger.error(f"Unhandled exception: {e}")
+#     response = jsonify({"error": "Internal server error"})
     
-    response = jsonify({"error": "Internal server error"})
+#     origin = request.headers.get('Origin', 'https://brief-me-seven.vercel.app')
+#     if origin in ['http://localhost:3000', 'https://brief-me-seven.vercel.app', FRONTEND_URL]:
+#         response.headers.add('Access-Control-Allow-Origin', origin)
+#     else:
+#         response.headers.add('Access-Control-Allow-Origin', 'https://brief-me-seven.vercel.app')
     
-    origin = request.headers.get('Origin', 'https://brief-me-seven.vercel.app')
-    if origin in ['http://localhost:3000', 'https://brief-me-seven.vercel.app', FRONTEND_URL]:
-        response.headers.add('Access-Control-Allow-Origin', origin)
-    else:
-        response.headers.add('Access-Control-Allow-Origin', 'https://brief-me-seven.vercel.app')
+#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+#     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+#     response.headers.add('Access-Control-Allow-Credentials', 'true')
     
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    
-    return response, 500
+#     return response, 500
 
 @app.route('/api/briefs', methods=['OPTIONS'])
 @app.route('/api/briefs/<string:brief_id>', methods=['OPTIONS'])  
