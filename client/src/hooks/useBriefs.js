@@ -8,13 +8,16 @@ export default function useBriefs(sessionId) {
 
   // Fetch all briefs for the session
   const fetchBriefs = useCallback(async () => {
+    if (!sessionId) return; // Don't fetch if no sessionId
+
     setLoading(true);
     setError("");
     try {
       const data = await getBriefs(sessionId);
-      setBriefs(data);
+      setBriefs(Array.isArray(data) ? data : []); // Ensure it's always an array
     } catch (e) {
       setError("Failed to fetch briefs.");
+      setBriefs([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -23,15 +26,21 @@ export default function useBriefs(sessionId) {
   // Create a new brief
   const submitBrief = useCallback(
     async (sourceText) => {
+      if (!sessionId || !sourceText.trim()) return;
+
       setLoading(true);
-      setError("");
+      setError(null);
       try {
-        const newBrief = await createBrief(sourceText, sessionId);
-        setBriefs((prev) => [newBrief, ...prev]);
-        return newBrief;
-      } catch (e) {
-        setError("Failed to create brief.");
-        throw e;
+        const response = await createBrief(sourceText, sessionId);
+        setBriefs((prev) => [response, ...(Array.isArray(prev) ? prev : [])]);
+        return response;
+      } catch (err) {
+        const errorMessage = err.message || "Failed to create brief";
+        setError(errorMessage);
+        // Don't throw in production, show user-friendly error
+        if (process.env.NODE_ENV === 'development') {
+          throw err;
+        }
       } finally {
         setLoading(false);
       }
@@ -42,6 +51,8 @@ export default function useBriefs(sessionId) {
   // Get a specific brief by ID
   const fetchBrief = useCallback(
     async (briefId) => {
+      if (!sessionId || !briefId) return;
+
       setLoading(true);
       setError("");
       try {
@@ -59,11 +70,15 @@ export default function useBriefs(sessionId) {
   // Delete a brief
   const removeBrief = useCallback(
     async (briefId) => {
+      if (!sessionId || !briefId) return;
+
       setLoading(true);
       setError("");
       try {
         await deleteBrief(briefId, sessionId);
-        setBriefs((prev) => prev.filter((b) => b.id !== briefId));
+        setBriefs((prev) =>
+          Array.isArray(prev) ? prev.filter((b) => b.id !== briefId) : []
+        );
       } catch (e) {
         setError("Failed to delete brief.");
         throw e;

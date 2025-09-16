@@ -6,14 +6,17 @@ export default function BriefList({ briefs, loading, onSelectBrief, onRefresh })
   return (
     <section className="w-full max-w-2xl mx-auto mt-8 mb-20 relative">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-semibold text-[#2E4052]">Your Briefs</h2>
-        <button
-          onClick={onRefresh}
-          className="rounded-full p-2 hover:bg-gray-100 transition"
-          title="Refresh"
-        >
-          <span className="text-xl" role="img" aria-label="refresh">↻</span>
-        </button>
+        <h2 className="text-lg font-semibold text-[#2E4052]">
+          Your Briefs ({loading ? '...' : briefs.length})
+        </h2>
+        {!loading && (
+          <button 
+            onClick={onRefresh}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Refresh
+          </button>
+        )}
       </div>
       {loading ? (
         <>

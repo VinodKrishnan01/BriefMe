@@ -64,11 +64,6 @@ export default function App() {
   const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
-    fetchBriefs();
-    // eslint-disable-next-line
-  }, [sessionId]);
-
-  useEffect(() => {
     if (error) showToast(error, "error");
     // eslint-disable-next-line
   }, [error, showToast]);
@@ -76,8 +71,8 @@ export default function App() {
 
 const handleCreateBrief = async (text) => {
   try {
-    await submitBrief(text);
-    await fetchBriefs(); // <-- Add this line
+    const newBrief = await submitBrief(text);  // Get the created brief
+    // Instead of fetching all briefs, just add the new one to the list
     showToast("Brief created!", "success");
   } catch {
     // error handled in hook
@@ -129,17 +124,36 @@ const handleCreateBrief = async (text) => {
     [showToast]
   );
 
+  const handleLoadBriefs = useCallback(() => {
+    if (sessionId) {
+      fetchBriefs();
+    }
+  }, [sessionId, fetchBriefs]);
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-10">
       <Header sessionId={sessionId} />
       <main className="pt-20 px-2">
         <BriefInput onSubmit={handleCreateBrief} loading={loading} />
+        {/* Only show BriefList if user has created briefs or explicitly wants to see history */}
+        {briefs.length > 0 && (
           <BriefList
             briefs={briefs}
             loading={loading}
             onSelectBrief={handleSelectBrief}
-            onRefresh={fetchBriefs}
+          //  onRefresh={fetchBriefs}
           />
+        )}
+        {briefs.length === 0 && !loading && (
+          <div className="text-center mt-8">
+            <button 
+              onClick={handleLoadBriefs}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Load Previous Briefs
+            </button>
+          </div>
+        )}
         <BriefDetailModal
           brief={selectedBrief}
           isOpen={modalOpen}
