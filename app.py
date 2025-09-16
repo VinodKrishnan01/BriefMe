@@ -321,7 +321,7 @@ def health():
     
     return jsonify(health_status)
 
-@app.route("/api/briefs", methods=["POST"])
+@app.route("/api/briefs", methods=["POST","OPTIONS"])
 def create_brief():
     if request.method == "OPTIONS":
         return "", 200
