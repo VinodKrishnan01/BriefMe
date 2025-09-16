@@ -440,11 +440,7 @@ def delete_brief(brief_id: str):
 @app.route('/api/briefs', methods=['OPTIONS'])
 @app.route('/api/briefs/<string:brief_id>', methods=['OPTIONS'])  
 def handle_options(brief_id=None):
-    response = jsonify({'status': 'ok'})
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add('Access-Control-Allow-Headers', "*")
-    response.headers.add('Access-Control-Allow-Methods', "*")
-    return response
+    return '', 200  # Let CORS middleware handle headers
 
 if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", "5000"))
